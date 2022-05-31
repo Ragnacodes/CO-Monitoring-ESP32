@@ -1,22 +1,59 @@
-#define ONBOARD_LED  2
-#define LED          15
+#include <WiFi.h>
+#include <HTTPClient.h>
 
+const char* ssid = "Mike Wazowski";
+const char* password = "*******";
+
+String serverName = "https://webhook.site/2830263a-99eb-4a82-ac36-98a0fa0826ac";
+
+unsigned long lastTime = 0;
+unsigned long timerDelay = 5000;
 
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
-  Serial.println("Hello World!");
+  Serial.begin(115200); 
 
-  pinMode(ONBOARD_LED,OUTPUT);
-  pinMode(LED, OUTPUT);
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+ 
+  Serial.println("Timer set to 5 seconds (timerDelay variable), it will take 5 seconds before publishing the first reading.");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  delay(2000);
-  digitalWrite(ONBOARD_LED,HIGH);
-  digitalWrite(LED,LOW);
-  delay(1000);
-  digitalWrite(ONBOARD_LED,LOW);
-  digitalWrite(LED,HIGH);
+  if ((millis() - lastTime) > timerDelay) {
+    if(WiFi.status()== WL_CONNECTED){
+      HTTPClient http;
+
+//      String serverPath = serverName + "?temperature=24.37";
+
+      String serverPath = serverName;
+      
+      http.begin(serverPath.c_str());
+      
+      int httpResponseCode = http.GET();
+      
+      if (httpResponseCode>0) {
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+        String payload = http.getString();
+        Serial.println(payload);
+      }
+      else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+      }
+      // Free resources
+      http.end();
+    }
+    else {
+      Serial.println("WiFi Disconnected");
+    }
+    lastTime = millis();
+  }
 }
